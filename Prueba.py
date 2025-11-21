@@ -17,10 +17,16 @@ VERDE_PARQUE = (50, 150, 50)  # Color oscuro para zonas verdes/parques
 GRIS_CALLE = (60, 60, 60)      # Color para las calles
 ROJO = (255, 0, 0)
 VERDE = (0, 255, 0)
+AMARILLO = (255, 255, 0)
+
 
 # --- Definición del Espacio de Acera ---
 ANCHO_ACERA = 4 # Ancho de la acera en píxeles. Debe ser pequeño, ej: 4 o 5.
 DIMENSION_CONTENIDO = DIMENSION_CELDA - (2 * ANCHO_ACERA) # El área real de la calle/parque
+
+# Cargar imagen de calle
+img_calle = pygame.image.load("calle.png")
+img_calle = pygame.transform.scale(img_calle, (DIMENSION_CONTENIDO, DIMENSION_CONTENIDO))
 
 # --- Configuración de la Ventana (Igual que antes) ---
 ventana = pygame.display.set_mode((ANCHO_VENTANA, ALTO_VENTANA))
@@ -67,11 +73,24 @@ class Semaforo:
         
     def cambiar_estado(self, duracion_ms=3000):
         tiempo_actual = pygame.time.get_ticks()
-        if tiempo_actual - self.tiempo_cambio > duracion_ms:
+
+        # Duraciones personalizadas para cada color
+        duraciones = {
+            ROJO: 3000,
+            VERDE: 3000,
+            AMARILLO: 1000
+        }
+
+
+        if tiempo_actual - self.tiempo_cambio > duraciones[self.estado]:
+            # Cambiar el estado en secuencia ROJO → VERDE → AMARILLO → ROJO
             if self.estado == ROJO:
                 self.estado = VERDE
-            else:
+            elif self.estado == VERDE:
+                self.estado = AMARILLO
+            elif self.estado == AMARILLO:
                 self.estado = ROJO
+            
             self.tiempo_cambio = tiempo_actual
 
 
@@ -100,26 +119,29 @@ lista_semaforos = generar_posiciones_semaforos(10)
 
 # --- Funciones de Dibujo ---
 def dibujar_mapa_con_acera():
-    # Paso 1: Rellenar todo el fondo con el color de la acera
     ventana.fill(VERDE_ACERA)
 
-    # Paso 2: Dibujar las calles y parques DENTRO del borde de la acera
     for i in range(12):
         for j in range(12):
             
-            # Coordenadas y dimensiones del contenido (calle o parque)
+            # Coordenadas reales dentro de la celda (sin acera)
             x_contenido = j * DIMENSION_CELDA + ANCHO_ACERA
             y_contenido = i * DIMENSION_CELDA + ANCHO_ACERA
-            rect_contenido = pygame.Rect(x_contenido, y_contenido, 
-                                        DIMENSION_CONTENIDO, DIMENSION_CONTENIDO)
-                               
-            # Lógica para determinar si es calle o parque (basado en par/impar)
+
+            # Si ambos índices son pares -> parque (se queda como antes)
             if (i % 2 == 0) and (j % 2 == 0):
-                 # Zonas verdes centrales/parques (esquinas, índices pares)
+                rect_contenido = pygame.Rect(
+                    x_contenido,
+                    y_contenido,
+                    DIMENSION_CONTENIDO,
+                    DIMENSION_CONTENIDO
+                )
                 pygame.draw.rect(ventana, VERDE_PARQUE, rect_contenido)
+
             else:
-                # Calles (cualquier celda con al menos un índice impar)
-                pygame.draw.rect(ventana, GRIS_CALLE, rect_contenido)
+                # Celda de calle -> dibujar textura
+                ventana.blit(img_calle, (x_contenido, y_contenido))
+
 
 
 def dibujar_semaforos(semaforos):
