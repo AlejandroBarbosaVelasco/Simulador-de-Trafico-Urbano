@@ -1,4 +1,6 @@
 import pygame
+
+# Asi se inicializa
 pygame.init()
 
 # Configuración de la cuadrícula
@@ -6,7 +8,7 @@ GRID_SIZE = 12
 BLOCK_SIZE = 40
 STREET_WIDTH = 30
 
-# Tamaño exacto sin calles externas
+# Tamaño exacto sin bordes (la coisa gris que les mostre)
 WIDTH  = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
 HEIGHT = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
 
