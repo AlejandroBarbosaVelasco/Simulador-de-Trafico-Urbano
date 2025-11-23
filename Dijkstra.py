@@ -2,6 +2,10 @@ import heapq
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
+# Cada hilo debe de llamar a la funcion dijkstra, si queremos ser mas realistas pensaba en que deben de llamarlo cada que cruza una interseccion
+# esto debido a que si hay una congestion, que tomen la desicion de ir por otro lado
+
 def dijkstra(grafo, nodo_origen):
     # Inicializar las distancias mas cortas conocidas como infinito
     distancias = {nodo: float('inf') for nodo in grafo}
