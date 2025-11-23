@@ -7,6 +7,9 @@ def dijkstra(grafo, nodo_origen):
     distancias = {nodo: float('inf') for nodo in grafo}
     distancias[nodo_origen] = 0 # La distancia de inicio con el nodo origen es 0
 
+    # Diccionario para reconstruir caminos
+    predecesores = {nodo: None for nodo in grafo}
+
     # Cola de prioridad para explorar los nodos, inicializada con el nodo origen
     cola_prioridad = [(0, nodo_origen)] # (distancia, nodo)
 
@@ -26,12 +29,32 @@ def dijkstra(grafo, nodo_origen):
 
             if nueva_distancia < distancias[vecino]:
                 distancias[vecino] = nueva_distancia
+                # Guardar quién lleva al vecino
+                predecesores[vecino] = nodo_actual
                 #Agregar el vecino a la cola de prioridad
                 heapq.heappush(cola_prioridad, (nueva_distancia, vecino))
     
-    return distancias
+    return distancias, predecesores
 
-def graficar_grafo(grafo):
+def reconstruir_camino(predecesores, origen, destino):
+    camino = []
+    actual = destino
+
+    while actual is not None:
+        camino.append(actual)
+        actual = predecesores[actual]
+
+    camino.reverse()
+
+    # Validar si realmente se alcanzó el destino
+    if camino[0] != origen:
+        return None  # No hay camino
+
+    return camino
+
+
+
+def graficar_grafo(grafo, camino_resaltado=None):
     # Crear un grafo dirigido usando NetworkX
     G = nx.DiGraph()
 
@@ -42,7 +65,7 @@ def graficar_grafo(grafo):
 
     # Obtener las posiciones de los nodos para la gráfica
     # nx.spring_layout es un algoritmo de disposición (layout)
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, seed=42)
 
     # Dibujar nodos y etiquetas
     nx.draw(
@@ -58,6 +81,18 @@ def graficar_grafo(grafo):
     # Dibujar las etiquetas de las aristas (pesos)
     labels = nx.get_edge_attributes(G, 'weight')
     nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=10)
+
+    if camino_resaltado:
+        # Crear lista de aristas del camino (ej: A->B, B->C)
+        aristas_camino = list(zip(camino_resaltado, camino_resaltado[1:]))
+        
+        # Dibujar nodos del camino en rojo
+        nx.draw_networkx_nodes(G, pos, nodelist=camino_resaltado, node_color='orange', node_size=2000)
+        
+        # Dibujar aristas del camino en rojo y más gruesas
+        nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
+        
+        print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
 
     # Mostrar la gráfica
     plt.title("Representación gráfica del grafo")
@@ -79,14 +114,23 @@ grafo = {
     'C3': {'C2':1, 'B3':1},
 }
 
+origen = 'A2'
+destino = 'B3'
+
 # Ejecutar djkstra desde el nodo 'a'
-resultado = dijkstra(grafo, 'A1')
+distancias, predecesores = dijkstra(grafo, origen)
+camino = reconstruir_camino(predecesores, origen, destino)
+costo_total = distancias[destino]
 
-# Mostrar las distancias mas cortas desde 'a'
-print("Distancias mas cortas desde '0': ")
-for nodo, distancia in resultado.items():
-    print(f'Nodo {nodo}: {distancia}')
-
-
-# Llama a la función con el ejemplo
-graficar_grafo(grafo)
+if camino:
+    print("----------------RESULTADOS----------------")
+    print(f"Origen: {origen}")
+    print(f"Destino: {destino}")
+    print(f"Ruta más corta: {' -> '.join(camino)}")
+    print(f"Costo total: {costo_total}")
+    print("------------------------------------------")
+    
+    # 5. Graficamos con la ruta resaltada
+    graficar_grafo(grafo, camino_resaltado=camino)
+else:
+    print(f"No existe un camino entre {origen} y {destino}")
