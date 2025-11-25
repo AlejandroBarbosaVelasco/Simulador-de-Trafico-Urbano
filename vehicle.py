@@ -15,8 +15,9 @@ class Vehicle(threading.Thread):
                  step_time=0.3):
         super().__init__(daemon=True)
         self.vid = vid
-        self.start = start
-        self.goal = goal
+        self.start_pos = start
+        self.goal_pos = goal
+
         self.path = path[:]  # lista de nodos
         self.locks = intersection_locks
         self.traffic_lights = traffic_lights
@@ -34,49 +35,59 @@ class Vehicle(threading.Thread):
         return tl.current_color == "GREEN"
 
     def run(self):
-        # Adquirir lock del nodo inicial para indicar ocupación
-        current = self.start
+        current = self.start_pos
+        self.current_pos = current   # <<< NUEVO
+
         acquired = self.locks[current].acquire(timeout=5)
         if not acquired:
-            # no pudo adquirir nodo inicial -> abandona
             print(f"[V{self.vid}] No pudo adquirir inicio {current}")
             self.finished.set()
             return
 
-        # Recorre path (primer elemento debe ser start)
         for next_node in self.path[1:]:
+
             moved = False
+            wait_start = time.time()
+
             while not moved:
-                # Checar semáforo (si existe) y status del lock del next_node
+
                 if not self.can_enter_by_light(next_node):
-                    # semáforo no permite, esperar
                     time.sleep(0.2)
                     continue
 
-                # Intentar adquirir el lock del siguiente nodo sin bloquear indefinidamente
                 got = self.locks[next_node].acquire(blocking=False)
+
                 if got:
-                    # Movimiento: adquirimos next_node -> soltamos current
-                    # (estrategia: acquire next then release current para evitar huecos)
-                    time.sleep(self.step_time)  # simula desplazamiento entre nodos
+                    time.sleep(self.step_time)
                     self.locks[current].release()
                     current = next_node
+                    self.current_pos = next_node   # <<< SE ACTUALIZA
                     moved = True
                 else:
-                    # No pudo adquirir (ocupado), esperar
                     time.sleep(0.1)
 
-            # si llegó al destino último, termina
-            if current == self.goal:
+                # Tiempo máximo esperando pasar
+                if time.time() - wait_start > 10:
+                    print(f"[V{self.vid}] Abortó por atasco en {next_node}")
+                    self.finished.set()
+                    return
+
+            if current == self.goal_pos:
                 break
 
-        # Liberar lock final (si aún lo tiene)
-        if self.locks[current].locked():
-            try:
-                self.locks[current].release()
-            except RuntimeError:
-                # ya liberado por alguna razón
-                pass
-
         self.finished.set()
-        # print(f"[V{self.vid}] Llegó a destino {self.goal}")
+
+
+    def draw(self, screen, cell_size=40):
+        # Convertir fila/columna a coordenadas de pantalla
+        r, c = self.current_pos
+        x = c * cell_size + cell_size // 2
+        y = r * cell_size + cell_size // 2
+
+        # Dibujar triángulo (pequeño)
+        p1 = (x, y - 6)
+        p2 = (x - 4, y + 6)
+        p3 = (x + 4, y + 6)
+
+        import pygame
+        pygame.draw.polygon(screen, (255, 200, 0), [p1, p2, p3])
