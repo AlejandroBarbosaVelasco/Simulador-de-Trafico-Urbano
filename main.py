@@ -1,71 +1,70 @@
-import time
+# main.py
+import pygame
+from city_map import (
+    GRID_SIZE, 
+    BLOCK_SIZE, 
+    STREET_WIDTH,
+    generate_traffic_lights
+)
 
-NUMERO_VEHICULOS = 20
-LUCES = {
-    'LUZ_VERDE' : 5,
-    'LUZ_AMARILLA' : 2,
-    'LUZ_ROJA' : 6
-}
-COORDENADAS_INICIO = {
-    'X' : 0,
-    'Y' : 0
-}
+pygame.init()
 
-COORDENADAS_DESTINO = {
-    'X' : 0,
-    'Y' : 0
-}
+# Crear ventana
+WIDTH  = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
+HEIGHT = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
 
-def muestra_valores():
-    print("Configuracion inicial: \n")
-    print("Cantidad de vehiculos: ",NUMERO_VEHICULOS)
-    print("\nTiempo de luces: ")
-    for x,y in LUCES.items():
-        print(x,y)
-    print("\nCoordenadas de inicio: ")
-    for x,y in COORDENADAS_INICIO.items():
-        print(x,y)
-    print("\nCoordenadas de destino: ")
-    for x,y in COORDENADAS_DESTINO.items():
-        print(x,y)
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Ciudad 12x12 con Semáforos Independientes")
 
-def cambio_valores():
-    NUMERO_VEHICULOS = input("\n\nCantidad de vehiculos (Maximo 200 minimo 20): ")
-    verificacion_vehicular = int(NUMERO_VEHICULOS) >= 20 and int(NUMERO_VEHICULOS) <=200
-    print(verificacion_vehicular)
-    while(not verificacion_vehicular):
-        NUMERO_VEHICULOS = input("\n\nCantidad de vehiculos (Maximo 200 minimo 20): ")
-        verificacion_vehicular = int(NUMERO_VEHICULOS) >= 20 and int(NUMERO_VEHICULOS) <=200
-        print(verificacion_vehicular)
+GREEN = (80, 170, 60)
 
-    print("\nTiempo de luces: ")
-    for x,y in LUCES.items():
-        z = input(f""+x+": ")
-        LUCES[x] = z
-    print("\nCoordenadas de inicio: ")
-    for x,y in COORDENADAS_INICIO.items():
-        z = input(f""+x+": ")
-        COORDENADAS_INICIO[x] = z
-    print("\nCoordenadas de destino: ")
-    for x,y in COORDENADAS_DESTINO.items():
-        z = input(f""+x+": ")
-        COORDENADAS_DESTINO[x] = z
+# Cargar imágenes de calles
+img_hori = pygame.image.load("Calle Hori.png")
+img_vert = pygame.image.load("Calle Verti.png")
 
+img_hori = pygame.transform.scale(img_hori, (BLOCK_SIZE, STREET_WIDTH))
+img_vert = pygame.transform.scale(img_vert, (STREET_WIDTH, BLOCK_SIZE))
 
-def menu():
-    fg = True
-    while(fg):
-        print("----------Inicio del proyecto----------\n")
-        muestra_valores()
-        cambio = input("\n\nDesea cambiar los valores actuales?: (S/N)")
-        if cambio == 'S':
-            cambio_valores()
-        elif cambio == 'N':
-            fg = False
-        else:
-            print("Opcion no valida")
-            time.sleep(3)
+# Crear semáforos como hilos
+traffic_lights = generate_traffic_lights()
 
+running = True
+while running:
 
-if __name__ == "__main__":
-    menu()
+    win.fill((50, 50, 50))
+
+    # Dibujar mapa
+    for row in range(GRID_SIZE):
+        for col in range(GRID_SIZE):
+
+            x = col * (BLOCK_SIZE + STREET_WIDTH)
+            y = row * (BLOCK_SIZE + STREET_WIDTH)
+
+            # Calles
+            if row > 0:
+                win.blit(img_hori, (x, y - STREET_WIDTH))
+            if col > 0:
+                win.blit(img_vert, (x - STREET_WIDTH, y))
+
+            pygame.draw.rect(
+                win, 
+                GREEN,
+                (x, y, BLOCK_SIZE, BLOCK_SIZE)
+            )
+
+    # Dibujar cada semáforo según su color actual
+    for sem in traffic_lights:
+        pygame.draw.circle(win, sem.current_color, (sem.x, sem.y), 8)
+
+    # Eventos
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    pygame.display.update()
+
+pygame.quit()
+
+# Apagar hilos
+for sem in traffic_lights:
+    sem.stop()
