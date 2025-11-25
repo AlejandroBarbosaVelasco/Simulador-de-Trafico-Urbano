@@ -1,5 +1,5 @@
 import heapq
-import networkx as nx
+# import networkx as nx
 import matplotlib.pyplot as plt
 
 
@@ -58,49 +58,49 @@ def reconstruir_camino(predecesores, origen, destino):
 
 
 
-def graficar_grafo(grafo, camino_resaltado=None):
-    # Crear un grafo dirigido usando NetworkX
-    G = nx.DiGraph()
+# def graficar_grafo(grafo, camino_resaltado=None):
+#     # Crear un grafo dirigido usando NetworkX
+#     G = nx.DiGraph()
 
-    # Añadir los nodos y las aristas con pesos
-    for nodo, vecinos in grafo.items():
-        for vecino, peso in vecinos.items():
-            G.add_edge(nodo, vecino, weight=peso)
+#     # Añadir los nodos y las aristas con pesos
+#     for nodo, vecinos in grafo.items():
+#         for vecino, peso in vecinos.items():
+#             G.add_edge(nodo, vecino, weight=peso)
 
-    # Obtener las posiciones de los nodos para la gráfica
-    # nx.spring_layout es un algoritmo de disposición (layout)
-    pos = nx.spring_layout(G, seed=42)
+#     # Obtener las posiciones de los nodos para la gráfica
+#     # nx.spring_layout es un algoritmo de disposición (layout)
+#     pos = nx.spring_layout(G, seed=42)
 
-    # Dibujar nodos y etiquetas
-    nx.draw(
-        G, 
-        pos, 
-        with_labels=True, 
-        node_color='lightblue', 
-        node_size=2000, 
-        font_size=10, 
-        font_weight='bold'
-    )
+#     # Dibujar nodos y etiquetas
+#     nx.draw(
+#         G, 
+#         pos, 
+#         with_labels=True, 
+#         node_color='lightblue', 
+#         node_size=2000, 
+#         font_size=10, 
+#         font_weight='bold'
+#     )
 
-    # Dibujar las etiquetas de las aristas (pesos)
-    labels = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=10)
+#     # Dibujar las etiquetas de las aristas (pesos)
+#     labels = nx.get_edge_attributes(G, 'weight')
+#     nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=10)
 
-    if camino_resaltado:
-        # Crear lista de aristas del camino (ej: A->B, B->C)
-        aristas_camino = list(zip(camino_resaltado, camino_resaltado[1:]))
+#     if camino_resaltado:
+#         # Crear lista de aristas del camino (ej: A->B, B->C)
+#         aristas_camino = list(zip(camino_resaltado, camino_resaltado[1:]))
         
-        # Dibujar nodos del camino en rojo
-        nx.draw_networkx_nodes(G, pos, nodelist=camino_resaltado, node_color='orange', node_size=2000)
+#         # Dibujar nodos del camino en rojo
+#         nx.draw_networkx_nodes(G, pos, nodelist=camino_resaltado, node_color='orange', node_size=2000)
         
-        # Dibujar aristas del camino en rojo y más gruesas
-        nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
+#         # Dibujar aristas del camino en rojo y más gruesas
+#         nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
         
-        print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
+#         print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
 
-    # Mostrar la gráfica
-    plt.title("Representación gráfica del grafo")
-    plt.show()
+#     # Mostrar la gráfica
+#     plt.title("Representación gráfica del grafo")
+#     plt.show()
 
 # --- Ejemplo de uso del código ---
 
@@ -135,6 +135,6 @@ if camino:
     print("------------------------------------------")
     
     # 5. Graficamos con la ruta resaltada
-    graficar_grafo(grafo, camino_resaltado=camino)
+    # graficar_grafo(grafo, camino_resaltado=camino)
 else:
     print(f"No existe un camino entre {origen} y {destino}")
