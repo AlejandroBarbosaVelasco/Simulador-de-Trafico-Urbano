@@ -1,5 +1,5 @@
 import heapq
-# import networkx as nx
+import networkx as nx
 import matplotlib.pyplot as plt
 
 
@@ -84,71 +84,119 @@ def calcular_camino(grafo, nodo_origen, nodo_destino):
 
 
 
-# def graficar_grafo(grafo, camino_resaltado=None):
-#     # Crear un grafo dirigido usando NetworkX
-#     G = nx.DiGraph()
+def graficar_grafo(grafo, camino_resaltado=None):
+    # Crear un grafo dirigido usando NetworkX
+    G = nx.DiGraph()
 
-#     # Añadir los nodos y las aristas con pesos
-#     for nodo, vecinos in grafo.items():
-#         for vecino, peso in vecinos.items():
-#             G.add_edge(nodo, vecino, weight=peso)
+    # Añadir los nodos y las aristas con pesos
+    for nodo, vecinos in grafo.items():
+        for vecino, peso in vecinos.items():
+            G.add_edge(nodo, vecino, weight=peso)
 
-#     # Obtener las posiciones de los nodos para la gráfica
-#     # nx.spring_layout es un algoritmo de disposición (layout)
-#     pos = nx.spring_layout(G, seed=42)
+    # Obtener las posiciones de los nodos para la gráfica
+    # nx.spring_layout es un algoritmo de disposición (layout)
+    pos = nx.spring_layout(G, seed=42)
 
-#     # Dibujar nodos y etiquetas
-#     nx.draw(
-#         G, 
-#         pos, 
-#         with_labels=True, 
-#         node_color='lightblue', 
-#         node_size=2000, 
-#         font_size=10, 
-#         font_weight='bold'
-#     )
+    # Dibujar nodos y etiquetas
+    nx.draw(
+        G, 
+        pos, 
+        with_labels=True, 
+        node_color='lightblue', 
+        node_size=2000, 
+        font_size=10, 
+        font_weight='bold'
+    )
 
-#     # Dibujar las etiquetas de las aristas (pesos)
-#     labels = nx.get_edge_attributes(G, 'weight')
-#     nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=10)
+    # Dibujar las etiquetas de las aristas (pesos)
+    labels = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=10)
 
-#     if camino_resaltado:
-#         # Crear lista de aristas del camino (ej: A->B, B->C)
-#         aristas_camino = list(zip(camino_resaltado, camino_resaltado[1:]))
+    if camino_resaltado:
+        # Crear lista de aristas del camino (ej: A->B, B->C)
+        aristas_camino = list(zip(camino_resaltado, camino_resaltado[1:]))
         
-#         # Dibujar nodos del camino en rojo
-#         nx.draw_networkx_nodes(G, pos, nodelist=camino_resaltado, node_color='orange', node_size=2000)
+        # Dibujar nodos del camino en rojo
+        nx.draw_networkx_nodes(G, pos, nodelist=camino_resaltado, node_color='orange', node_size=2000)
         
-#         # Dibujar aristas del camino en rojo y más gruesas
-#         nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
+        # Dibujar aristas del camino en rojo y más gruesas
+        nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
         
-#         print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
+        print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
 
-#     # Mostrar la gráfica
-#     plt.title("Representación gráfica del grafo")
-#     plt.show()
+    # Mostrar la gráfica
+    plt.title("Representación gráfica del grafo")
+    plt.show()
 
 # --- Ejemplo de uso del código ---
 
 # Define el grafo en el formato esperado:
 # {Origen: {Destino: Peso, ...}, ...}
 
+def generar_grafo_NxN(N):
+    """
+    Genera un grafo de adyacencia para una cuadrícula de N x N.
+    Las filas se nombran con letras (A, B, C...) y las columnas con números (1, 2, 3...).
+    """
+    grafo = {}
+    letras = [chr(ord('A') + i) for i in range(N)]  # Genera 'A', 'B', 'C', ..., 'K' (para N=11)
+    numeros = [str(i + 1) for i in range(N)]        # Genera '1', '2', '3', ..., '11' (para N=11)
+
+    for i in range(N):      # Iterar sobre las filas (letras)
+        Fila = letras[i]
+        for j in range(N):  # Iterar sobre las columnas (números)
+            Columna = numeros[j]
+            nodo_actual = Fila + Columna
+            vecinos = {}
+
+            # Vecino de la Izquierda
+            if j > 0:
+                vecino_izq = Fila + numeros[j - 1]
+                vecinos[vecino_izq] = 1
+
+            # Vecino de la Derecha
+            if j < N - 1:
+                vecino_der = Fila + numeros[j + 1]
+                vecinos[vecino_der] = 1
+
+            # Vecino de Arriba
+            if i > 0:
+                vecino_arr = letras[i - 1] + Columna
+                vecinos[vecino_arr] = 1
+
+            # Vecino de Abajo
+            if i < N - 1:
+                vecino_aba = letras[i + 1] + Columna
+                vecinos[vecino_aba] = 1
+
+            grafo[nodo_actual] = vecinos
+
+    return grafo
+
+# Generar el grafo de 11x11
+
+# Puedes imprimir el resultado o acceder a sus nodos:
+# print(grafo_11x11)
+
 if __name__ == "__main__":
 
-    grafo = {
-        'A1': {'A2':1, 'B1':1},
-        'A2': {'A1':1, 'B2':1, 'A3':1},
-        'A3': {'A2':1, 'B3':1},
-        'B1': {'A1':1, 'B2':1, 'C1':1},
-        'B2': {'B1':1, 'B3':1, 'A2':1, 'C2':1},
-        'B3': {'B2':1, 'A3':1, 'C3':1},
-        'C1': {'C2':1, 'B1':1},
-        'C2': {'C1':1, 'B2':1, 'C3':1},
-        'C3': {'C2':1, 'B3':1},
-    }
+    # grafo = {
+    #     'A1': {'A2':1, 'B1':1},
+    #     'A2': {'A1':1, 'B2':1, 'A3':1},
+    #     'A3': {'A2':1, 'B3':1},
+    #     'B1': {'A1':1, 'B2':1, 'C1':1},
+    #     'B2': {'B1':1, 'B3':1, 'A2':1, 'C2':1},
+    #     'B3': {'B2':1, 'A3':1, 'C3':1},
+    #     'C1': {'C2':1, 'B1':1},
+    #     'C2': {'C1':1, 'B2':1, 'C3':1},
+    #     'C3': {'C2':1, 'B3':1},
+    # }
+
+    grafo = generar_grafo_NxN(11)
+
 
     origen = 'A1'
-    destino = 'C3'
+    destino = 'J3'
 
     # Ejecutar djkstra desde el nodo 'a'
     # distancias, predecesores = dijkstra(grafo, origen)
@@ -167,6 +215,6 @@ if __name__ == "__main__":
         print(f"Costo total: {costo_total}")
         print("------------------------------------------")
         
-        # graficar_grafo(grafo, camino_resaltado=camino)
+        graficar_grafo(grafo, camino_resaltado=camino)
     else:
         print(f"No existe un camino entre {origen} y {destino}")

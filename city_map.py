@@ -62,6 +62,7 @@ def generate_vehicles(n=20):
             end = random.choice(cells)
 
         v = Vehicle(start, end, grid_to_pos)
+        print(f"Posicion inicial: {start} Posicion final: {end}")
         v.start()
         vehicles.append(v)
 
