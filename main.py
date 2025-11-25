@@ -12,6 +12,7 @@ from city_map import (
 )
 
 script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+
 path_hori = os.path.join(script_dir, "Calle Hori.png")
 path_vert = os.path.join(script_dir, "Calle Verti.png")
 
