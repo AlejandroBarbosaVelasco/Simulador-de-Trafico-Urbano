@@ -122,7 +122,7 @@ def graficar_grafo(grafo, camino_resaltado=None):
         # Dibujar aristas del camino en rojo y más gruesas
         nx.draw_networkx_edges(G, pos, edgelist=aristas_camino, edge_color='red', width=2.5)
         
-        print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
+        # print(f"\n--> Camino visualizado en el gráfico: {' -> '.join(camino_resaltado)}")
 
     # Mostrar la gráfica
     plt.title("Representación gráfica del grafo")
@@ -139,34 +139,34 @@ def generar_grafo_NxN(N):
     Las filas se nombran con letras (A, B, C...) y las columnas con números (1, 2, 3...).
     """
     grafo = {}
-    letras = [chr(ord('A') + i) for i in range(N)]  # Genera 'A', 'B', 'C', ..., 'K' (para N=11)
-    numeros = [str(i + 1) for i in range(N)]        # Genera '1', '2', '3', ..., '11' (para N=11)
+    # letras = [chr(ord('A') + i) for i in range(N)]  # Genera 'A', 'B', 'C', ..., 'K' (para N=11)
+    numeros = [(i + 1) for i in range(N)]        # Genera '1', '2', '3', ..., '11' (para N=11)
 
     for i in range(N):      # Iterar sobre las filas (letras)
-        Fila = letras[i]
+        Fila = numeros[i]
         for j in range(N):  # Iterar sobre las columnas (números)
             Columna = numeros[j]
-            nodo_actual = Fila + Columna
+            nodo_actual = (Fila, Columna)
             vecinos = {}
 
             # Vecino de la Izquierda
             if j > 0:
-                vecino_izq = Fila + numeros[j - 1]
+                vecino_izq = (Fila,numeros[j - 1])
                 vecinos[vecino_izq] = 1
 
             # Vecino de la Derecha
             if j < N - 1:
-                vecino_der = Fila + numeros[j + 1]
+                vecino_der = (Fila , numeros[j + 1])
                 vecinos[vecino_der] = 1
 
             # Vecino de Arriba
             if i > 0:
-                vecino_arr = letras[i - 1] + Columna
+                vecino_arr = (numeros[i - 1] , Columna)
                 vecinos[vecino_arr] = 1
 
             # Vecino de Abajo
             if i < N - 1:
-                vecino_aba = letras[i + 1] + Columna
+                vecino_aba = (numeros[i + 1] , Columna)
                 vecinos[vecino_aba] = 1
 
             grafo[nodo_actual] = vecinos
@@ -191,12 +191,19 @@ if __name__ == "__main__":
     #     'C2': {'C1':1, 'B2':1, 'C3':1},
     #     'C3': {'C2':1, 'B3':1},
     # }
+    grafo_ejemplo = {
+        (0, 0): {(0, 1): 1, (1, 0): 1},
+        (0, 1): {(0, 0): 1, (1, 1): 1},
+        (1, 0): {(0, 0): 1, (1, 1): 1},
+        (1, 1): {(0, 1): 1, (1, 0): 1}
+    }
 
-    grafo = generar_grafo_NxN(11)
+
+    grafo = generar_grafo_NxN(3)
 
 
-    origen = 'A1'
-    destino = 'J3'
+    origen = (1,1)
+    destino = (3,3)
 
     # Ejecutar djkstra desde el nodo 'a'
     # distancias, predecesores = dijkstra(grafo, origen)
@@ -210,7 +217,7 @@ if __name__ == "__main__":
         print("----------------RESULTADOS----------------")
         print(f"Origen: {origen}")
         print(f"Destino: {destino}")
-        print(f"Ruta más corta: {' -> '.join(camino)}")
+        # print(f"Ruta más corta: {' -> '.join(camino)}")
         print(f"Siguiente calle: {camino[1]}")
         print(f"Costo total: {costo_total}")
         print("------------------------------------------")
