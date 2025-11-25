@@ -1,5 +1,6 @@
 # city_map.py
 import random
+import threading
 from traffic_light import TrafficLight
 from vehicle import Vehicle
 
@@ -7,12 +8,20 @@ GRID_SIZE = 12
 BLOCK_SIZE = 40
 STREET_WIDTH = 30
 
+# Crear locks para cada intersección
+intersection_locks = [
+    [threading.Lock() for _ in range(GRID_SIZE)]
+    for _ in range(GRID_SIZE)
+]
 
+
+# ==========================================================
+# GENERAR SEMÁFOROS
+# ==========================================================
 def generate_traffic_lights():
-
     lights = []
 
-    # Posiciones válidas para intersecciones internas
+    # Solo intersecciones internas
     available = [
         (r, c)
         for r in range(1, GRID_SIZE - 1)
@@ -23,30 +32,33 @@ def generate_traffic_lights():
 
     for (r, c) in available[:12]:
 
-        # Conversión de coordenadas de grid → píxeles
+        # Convertir grid → pixeles
         x = c * (BLOCK_SIZE + STREET_WIDTH) - STREET_WIDTH
         y = r * (BLOCK_SIZE + STREET_WIDTH) - STREET_WIDTH
 
-        semaforo = TrafficLight(x, y)
+        sem = TrafficLight(x, y)
+        sem.row = r
+        sem.col = c
+        sem.start()
 
-        # Iniciar hilo del semáforo
-        semaforo.start()
-        lights.append(semaforo)
+        lights.append(sem)
 
     return lights
 
 
-def generate_vehicles(n=20):
+# ==========================================================
+# GENERAR VEHÍCULOS
+# ==========================================================
+def generate_vehicles(n, traffic_lights):
+
     vehicles = []
 
-    # Todas las celdas de intersección
     cells = [
         (r, c)
         for r in range(GRID_SIZE)
         for c in range(GRID_SIZE)
     ]
 
-    # Convertir celda → coordenada pixel en el cruce
     def grid_to_pos(cell):
         r, c = cell
         x = c * (BLOCK_SIZE + STREET_WIDTH)
@@ -56,13 +68,18 @@ def generate_vehicles(n=20):
     for _ in range(n):
 
         start = random.choice(cells)
-        end   = random.choice(cells)
+        end = random.choice(cells)
 
         while end == start:
             end = random.choice(cells)
 
-        v = Vehicle(start, end, grid_to_pos)
-        print(f"Posicion inicial: {start} Posicion final: {end}")
+        v = Vehicle(
+            start, end,
+            grid_to_pos,
+            traffic_lights,
+            intersection_locks
+        )
+
         v.start()
         vehicles.append(v)
 

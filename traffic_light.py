@@ -1,6 +1,7 @@
 # traffic_light.py
 import threading
 import time
+import random
 
 class TrafficLight(threading.Thread):
 
@@ -15,24 +16,36 @@ class TrafficLight(threading.Thread):
         self.yellow_time = yellow_time
         self.red_time    = red_time
 
-        self.current_color = (255, 0, 0)  # Empieza en rojo
+        # El semáforo empieza aleatoriamente en verde o rojo
+        self.current_color = random.choice([
+            (0, 220, 0),     # Verde
+            (220, 40, 40)    # Rojo
+        ])
+
         self.running = True
+
+    def is_green(self):
+        return self.current_color == (0, 220, 0)
 
     def run(self):
         """
         Ciclo infinito cambiando entre verde → amarillo → rojo.
         """
+
+        # Pequeño desfase para que no todos estén sincronizados
+        time.sleep(random.uniform(0.2, 2.0))
+
         while self.running:
 
-            # Verde
+            # 🔵 Verde
             self.current_color = (0, 220, 0)
             time.sleep(self.green_time)
 
-            # Amarillo
+            # 🟡 Amarillo
             self.current_color = (240, 220, 0)
             time.sleep(self.yellow_time)
 
-            # Rojo
+            # 🔴 Rojo
             self.current_color = (220, 40, 40)
             time.sleep(self.red_time)
 
