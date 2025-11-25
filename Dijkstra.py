@@ -56,6 +56,32 @@ def reconstruir_camino(predecesores, origen, destino):
 
     return camino
 
+def calcular_camino(grafo, nodo_origen, nodo_destino):
+    distancias = {nodo: float('inf') for nodo in grafo}
+    distancias[nodo_origen] = 0 # La distancia de inicio con el nodo origen es 0
+    predecesores = {nodo: None for nodo in grafo}
+    cola_prioridad = [(0, nodo_origen)] # (distancia, nodo)
+    while cola_prioridad:
+        distancia_actual, nodo_actual = heapq.heappop(cola_prioridad)
+        if distancia_actual > distancias[nodo_actual]:
+            continue
+        for vecino, peso in grafo[nodo_actual].items():
+            nueva_distancia = distancia_actual + peso
+            if nueva_distancia < distancias[vecino]:
+                distancias[vecino] = nueva_distancia
+                predecesores[vecino] = nodo_actual
+                heapq.heappush(cola_prioridad, (nueva_distancia, vecino))
+
+    camino = []
+    actual = nodo_destino
+    while actual is not None:
+        camino.append(actual)
+        actual = predecesores[actual]
+    camino.reverse()
+    if camino[0] != nodo_origen:
+        return None  
+    return camino, distancias
+
 
 
 # def graficar_grafo(grafo, camino_resaltado=None):
@@ -106,35 +132,41 @@ def reconstruir_camino(predecesores, origen, destino):
 
 # Define el grafo en el formato esperado:
 # {Origen: {Destino: Peso, ...}, ...}
-grafo = {
-    'A1': {'A2':1, 'B1':1},
-    'A2': {'A1':1, 'B2':1, 'A3':1},
-    'A3': {'A2':1, 'B3':1},
-    'B1': {'A1':1, 'B2':1, 'C1':1},
-    'B2': {'B1':1, 'B3':1, 'A2':1, 'C2':1},
-    'B3': {'B2':1, 'A3':1, 'C3':1},
-    'C1': {'C2':1, 'B1':1},
-    'C2': {'C1':1, 'B2':1, 'C3':1},
-    'C3': {'C2':1, 'B3':1},
-}
 
-origen = 'A2'
-destino = 'B3'
+if __name__ == "__main__":
 
-# Ejecutar djkstra desde el nodo 'a'
-distancias, predecesores = dijkstra(grafo, origen)
-camino = reconstruir_camino(predecesores, origen, destino)
-costo_total = distancias[destino]
+    grafo = {
+        'A1': {'A2':1, 'B1':1},
+        'A2': {'A1':1, 'B2':1, 'A3':1},
+        'A3': {'A2':1, 'B3':1},
+        'B1': {'A1':1, 'B2':1, 'C1':1},
+        'B2': {'B1':1, 'B3':1, 'A2':1, 'C2':1},
+        'B3': {'B2':1, 'A3':1, 'C3':1},
+        'C1': {'C2':1, 'B1':1},
+        'C2': {'C1':1, 'B2':1, 'C3':1},
+        'C3': {'C2':1, 'B3':1},
+    }
 
-if camino:
-    print("----------------RESULTADOS----------------")
-    print(f"Origen: {origen}")
-    print(f"Destino: {destino}")
-    print(f"Ruta más corta: {' -> '.join(camino)}")
-    print(f"Costo total: {costo_total}")
-    print("------------------------------------------")
-    
-    # 5. Graficamos con la ruta resaltada
-    # graficar_grafo(grafo, camino_resaltado=camino)
-else:
-    print(f"No existe un camino entre {origen} y {destino}")
+    origen = 'A1'
+    destino = 'C3'
+
+    # Ejecutar djkstra desde el nodo 'a'
+    # distancias, predecesores = dijkstra(grafo, origen)
+    # camino = reconstruir_camino(predecesores, origen, destino)
+    # costo_total = distancias[destino]
+
+    camino, distancias = calcular_camino(grafo, origen, destino)
+    costo_total = distancias[destino]
+
+    if camino:
+        print("----------------RESULTADOS----------------")
+        print(f"Origen: {origen}")
+        print(f"Destino: {destino}")
+        print(f"Ruta más corta: {' -> '.join(camino)}")
+        print(f"Siguiente calle: {camino[1]}")
+        print(f"Costo total: {costo_total}")
+        print("------------------------------------------")
+        
+        # graficar_grafo(grafo, camino_resaltado=camino)
+    else:
+        print(f"No existe un camino entre {origen} y {destino}")
