@@ -2,7 +2,10 @@
 import threading
 import time
 import heapq
-import math
+import random
+
+GRID_SIZE = 12  # asegúrate que coincide con city_map.GRID_SIZE si lo exportas
+
 class Vehicle(threading.Thread):
 
     def __init__(self, start_cell, end_cell, grid_to_pos, 
@@ -13,8 +16,11 @@ class Vehicle(threading.Thread):
         self.traffic_lights = traffic_lights
         self.intersection_locks = intersection_locks
 
-        # Ruta como lista de celdas
+        # Ruta como lista de celdas (A*)
         self.route = self.calculate_route(start_cell, end_cell)
+
+        # Información para debug
+        print(f"[INFO] Vehículo {id(self)} creado. Ruta: {start_cell} -> {end_cell}. Pasará por {len(self.route)} celdas.")
 
         # Posición de la celda actual
         self.row, self.col = self.route[0]
@@ -28,20 +34,14 @@ class Vehicle(threading.Thread):
 
         self.current_lock = None
 
-
-    # -------------------------------------------------
-
-
     # -------------------------------------------------
     def calculate_route(self, start, end):
         """
         Planeación de ruta usando A* sobre la cuadrícula.
         """
-
         start_r, start_c = start
         end_r, end_c = end
 
-        # Cola de prioridad (f, (r,c))
         pq = []
         heapq.heappush(pq, (0, start))
 
@@ -49,7 +49,6 @@ class Vehicle(threading.Thread):
         g_score = {start: 0}
 
         def heuristic(a, b):
-            # Distancia Manhattan
             ar, ac = a
             br, bc = b
             return abs(ar - br) + abs(ac - bc)
@@ -62,7 +61,6 @@ class Vehicle(threading.Thread):
 
             r, c = current
 
-            # Vecinos válidos (arriba, abajo, izquierda, derecha)
             neighbors = [
                 (r - 1, c),
                 (r + 1, c),
@@ -71,8 +69,7 @@ class Vehicle(threading.Thread):
             ]
 
             for nr, nc in neighbors:
-                # Dentro de límites
-                if 0 <= nr < 12 and 0 <= nc < 12:
+                if 0 <= nr < GRID_SIZE and 0 <= nc < GRID_SIZE:
 
                     tentative_g = g_score[current] + 1
 
@@ -82,9 +79,12 @@ class Vehicle(threading.Thread):
                         heapq.heappush(pq, (f, (nr, nc)))
                         came_from[(nr, nc)] = current
 
-        # Reconstruir ruta
         route = []
         node = end
+
+        # Si no hay camino (por algún bug), devolvemos [start] para no romper nada
+        if end not in came_from:
+            return [start]
 
         while node:
             route.append(node)
@@ -93,29 +93,20 @@ class Vehicle(threading.Thread):
         route.reverse()
         return route
 
-
-
     # -------------------------------------------------
     def get_traffic_light(self, row, col):
-        """
-        Busca si hay un semáforo en esa intersección
-        """
         for sem in self.traffic_lights:
-            if sem.row == row and sem.col == col:
+            # asumimos que cada semaforo tiene sem.row y sem.col (como en city_map)
+            if getattr(sem, "row", None) == row and getattr(sem, "col", None) == col:
                 return sem
         return None
 
-
     # -------------------------------------------------
     def compute_next_position(self):
-        """
-        Obtiene la siguiente celda en la ruta
-        """
         if self.next_index >= len(self.route):
             return self.row, self.col  # Llegó al destino
 
         return self.route[self.next_index]
-
 
     # -------------------------------------------------
     def run(self):
@@ -125,30 +116,60 @@ class Vehicle(threading.Thread):
 
             # Ya llegó al destino
             if (next_row, next_col) == (self.row, self.col):
+                if self.next_index >= len(self.route):
+                    print(f"[OK] Vehículo {id(self)} llegó a su destino final en {self.route[-1]}")
+                    self.running = False
+                    # liberar si por casualidad aún tiene lock
+                    if self.current_lock:
+                        try:
+                            self.current_lock.release()
+                        except RuntimeError:
+                            pass
+                        self.current_lock = None
+                    break
                 time.sleep(0.1)
                 continue
 
-            # 1) Checar semáforo
+            # 1) Semáforo: si existe y está rojo, esperar hasta verde
             sem = self.get_traffic_light(next_row, next_col)
             if sem:
                 while not sem.is_green() and self.running:
                     time.sleep(0.2)
 
-            # 2) Intentar adquirir lock del cruce
-            lock = self.intersection_locks[next_row][next_col]
-            acquired = lock.acquire(blocking=False)
-
-            while not acquired and self.running:
-                time.sleep(0.2)
-                acquired = lock.acquire(blocking=False)
-
-            # Si tenía otro lock, liberarlo
+            # 2) Estrategia de locking (evitar deadlocks):
+            #    Liberamos el lock actual antes de intentar adquirir el siguiente.
+            #    Esto evita espera circular entre vehículos adyacentes.
             if self.current_lock:
                 try:
                     self.current_lock.release()
                 except RuntimeError:
                     pass
+                self.current_lock = None
 
+            lock = self.intersection_locks[next_row][next_col]
+
+            # Intentar adquirir el lock objetivo con backoff
+            acquired = lock.acquire(blocking=False)
+            tries = 0
+            while not acquired and self.running:
+                # backoff con algo de aleatoriedad para reducir contención
+                time.sleep(0.05 + random.random() * 0.15)
+                acquired = lock.acquire(blocking=False)
+                tries += 1
+                # diagnóstico si está demasiado tiempo esperando
+                if tries == 50:
+                    print(f"[WARN] Vehículo {id(self)} esperando mucho por intersección {(next_row, next_col)}")
+
+            if not self.running:
+                # si se pidió stop mientras esperaba, asegurarnos de no quedarnos con lock
+                if acquired:
+                    try:
+                        lock.release()
+                    except RuntimeError:
+                        pass
+                break
+
+            # Al adquirir el lock del objetivo, lo marcamos como current_lock
             self.current_lock = lock
 
             # Avanzar a la nueva celda
@@ -158,15 +179,16 @@ class Vehicle(threading.Thread):
 
             time.sleep(0.15)
 
-
     # -------------------------------------------------
     def stop(self):
         self.running = False
+        # intentar soltar lock si se tiene
         if self.current_lock:
             try:
                 self.current_lock.release()
             except RuntimeError:
                 pass
+            self.current_lock = None
 
     # -------------------------------------------------
     def get_pixel_position(self):

@@ -6,7 +6,7 @@ import random
 class TrafficLight(threading.Thread):
 
     def __init__(self, x, y, 
-                 green_time=5, yellow_time=2, red_time=6):
+                 green_time=5, yellow_time=2, red_time=6): # Tiempo de los semaforos
         super().__init__()
 
         self.x = x
@@ -37,15 +37,15 @@ class TrafficLight(threading.Thread):
 
         while self.running:
 
-            # 🔵 Verde
+            # Verde
             self.current_color = (0, 220, 0)
             time.sleep(self.green_time)
 
-            # 🟡 Amarillo
+            # Amarillo
             self.current_color = (240, 220, 0)
             time.sleep(self.yellow_time)
 
-            # 🔴 Rojo
+            # Rojo
             self.current_color = (220, 40, 40)
             time.sleep(self.red_time)
 
