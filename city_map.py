@@ -18,7 +18,7 @@ intersection_locks = [
 # ==========================================================
 # GENERAR SEMÁFOROS
 # ==========================================================
-def generate_traffic_lights():
+def generate_traffic_lights(green_time, yellow_time, red_time):
     lights = []
 
     # Solo intersecciones internas
@@ -36,7 +36,7 @@ def generate_traffic_lights():
         x = c * (BLOCK_SIZE + STREET_WIDTH) - STREET_WIDTH
         y = r * (BLOCK_SIZE + STREET_WIDTH) - STREET_WIDTH
 
-        sem = TrafficLight(x, y)
+        sem = TrafficLight(x, y, green_time, yellow_time, red_time)
         sem.row = r
         sem.col = c
         sem.start()
