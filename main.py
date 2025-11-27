@@ -1,106 +1,75 @@
-# main.py
 import pygame
-from city_map import (
-    GRID_SIZE, 
-    BLOCK_SIZE, 
-    STREET_WIDTH,
-    generate_traffic_lights,
-    generate_vehicles
-)
+import pygame_menu
+from juego import start_game, WIDTH, HEIGHT
 
-# pygame.init()
+# --- 1. Configuración Global ---
+pygame.init()
+surface = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Sistema de Tráfico - Menú")
 
-# Crear ventana
-WIDTH  = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
-HEIGHT = GRID_SIZE * BLOCK_SIZE + (GRID_SIZE - 1) * STREET_WIDTH
+# Variables donde guardaremos la data del menú
+config_juego = {
+    'green_time': 5,
+    'yellow_time': 2,
+    'red_time': 6,
+    'vehiculos' : 20,
+    # Coordenadas de inicio y fin TODO
+}
 
-# win = pygame.display.set_mode((WIDTH, HEIGHT)) # Setea la ventana con el tamaño proporcionado
-# pygame.display.set_caption("Ciudad 12x12 con Semáforos Independientes")
+def set_vehiculos(valor):
+    # pygame-menu devuelve el valor tal cual para sliders/text inputs
+    config_juego['vehiculos'] = int(valor)
+def set_green_time(valor):
+    config_juego['green_time'] = int(valor)
 
-GREEN = (80, 170, 60)
-# green_time, yellow_time, red_time, 
-def start_game(surface, vehiculos, green_time, yellow_time, red_time):
-    """
-    surface: La ventana de pygame que ya creó el menú.
-    num_vehiculos: El valor que capturamos en el menú.
-    """
+def set_yellow_time(valor):
+    config_juego['yellow_time'] = int(valor)
 
-    # Cargar imágenes de calles
-    img_hori = pygame.image.load("Calle Hori.png")
-    img_vert = pygame.image.load("Calle Verti.png")
+def set_red_time(valor):
+    config_juego['red_time'] = int(valor)
 
-    img_hori = pygame.transform.scale(img_hori, (BLOCK_SIZE, STREET_WIDTH))
-    img_vert = pygame.transform.scale(img_vert, (STREET_WIDTH, BLOCK_SIZE))
+# --- 2. Juego Actual (Encapsulado) ---
+def iniciar_juego():
+    # Usas 'config_juego' para acceder a las variables
+    # Llamamos a la función del otro archivo pasando los parametros
+    start_game(surface, config_juego['vehiculos'], config_juego['green_time'], config_juego['yellow_time'], config_juego['red_time'])
 
-# --- INICIO DE HILOS USANDO EL PARAMETRO DEL MENU ---
-    traffic_lights = generate_traffic_lights(green_time, yellow_time, red_time)
-    vehicles = generate_vehicles(vehiculos, traffic_lights)
+    # Cuando start_simulation termine (return), el código sigue aquí:
+    # Reiniciamos el menú para que se vuelva a dibujar correctamente
+    # (Esto es necesario porque el juego "ensució" la pantalla)
+    pass 
 
-    running = True
-    clock = pygame.time.Clock()
-    while running:
-        # Usamos la 'surface' que nos pasaron, no creamos una nueva
-        surface.fill((50, 50, 50))
+# --- CONFIGURACIÓN DEL MENÚ ---
+menu = pygame_menu.Menu('Configuración', WIDTH, HEIGHT,
+                       theme=pygame_menu.themes.THEME_DARK)
 
-        # Dibujar mapa
-        for row in range(GRID_SIZE):
-            for col in range(GRID_SIZE):
+menu.add.label('Parametros de Simulación\n')
 
-                x = col * (BLOCK_SIZE + STREET_WIDTH)
-                y = row * (BLOCK_SIZE + STREET_WIDTH)
+# Input numérico para vehículos (slider o text input)
+menu.add.range_slider('Num Vehículos: ', 
+                     default=20, 
+                     range_values=(20, 200), 
+                     increment=1,
+                     onchange=set_vehiculos)
+menu.add.range_slider('Num Vehículos: ', 
+                     default=5, 
+                     range_values=(1, 10), 
+                     increment=1,
+                     onchange=set_green_time)
+menu.add.range_slider('Num Vehículos: ', 
+                     default=2, 
+                     range_values=(1, 10), 
+                     increment=1,
+                     onchange=set_yellow_time)
+menu.add.range_slider('Num Vehículos: ', 
+                     default=5, 
+                     range_values=(1, 10), 
+                     increment=1,
+                     onchange=set_red_time)
 
-                # Calles
-                if row > 0: surface.blit(img_hori, (x, y - STREET_WIDTH))
-                if col > 0: surface.blit(img_vert, (x - STREET_WIDTH, y))
+menu.add.label('\n')
+menu.add.button('INICIAR SIMULACIÓN', iniciar_juego)
+menu.add.button('Salir', pygame_menu.events.EXIT)
 
-                pygame.draw.rect(
-                    surface, 
-                    GREEN,
-                    (x, y, BLOCK_SIZE, BLOCK_SIZE)
-                )
-
-        # Dibujar cada semáforo
-        for sem in traffic_lights:
-            pygame.draw.circle(surface, sem.current_color, (sem.x, sem.y), 8)
-
-        # Dibujar vehículos
-        for v in vehicles:
-            x, y = v.get_pixel_position()
-
-            points = [
-                (x,     y - 8),
-                (x - 6, y + 6),
-                (x + 6, y + 6)
-            ]
-
-            # Imprime y colorea los vehiculos
-            pygame.draw.polygon(surface, (255, 255, 255), points)
-
-        # Eventos
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-            # Opción para volver al menú con ESC
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                running = False
-
-        pygame.display.update()
-        clock.tick(60) # Limitar FPS es importante para no quemar CPU
-
-    # pygame.quit()
-
-    # --- LIMPIEZA DE HILOS (Crucial antes de volver al menú) ---
-    for sem in traffic_lights:
-        sem.stop()
-    for v in vehicles:
-        v.stop()
-
-    # Esperar a que terminen
-    for sem in traffic_lights:
-        sem.join()
-    for v in vehicles:
-        v.join()
-
-    print("Simulación finalizada. Volviendo al menú.")
-    # AQUI DEBE DE RETORNARSE LOS TIEMPOS DE CADA HILO CON UN RETURN
+if __name__ == '__main__':
+    menu.mainloop(surface)
