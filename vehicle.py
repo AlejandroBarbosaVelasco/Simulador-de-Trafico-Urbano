@@ -8,8 +8,7 @@ GRID_SIZE = 12  # asegúrate que coincide con city_map.GRID_SIZE si lo exportas
 
 class Vehicle(threading.Thread):
 
-    def __init__(self, start_cell, end_cell, grid_to_pos, 
-                 traffic_lights, intersection_locks, speed=0.2):
+    def __init__(self, start_cell, end_cell, grid_to_pos, traffic_lights, intersection_locks, speed=0.2):
         super().__init__()
 
         self.grid_to_pos = grid_to_pos
@@ -33,6 +32,8 @@ class Vehicle(threading.Thread):
         self.running = True
 
         self.current_lock = None
+
+        self.execution_time = 0.0
 
     # -------------------------------------------------
     def calculate_route(self, start, end):
@@ -110,75 +111,90 @@ class Vehicle(threading.Thread):
 
     # -------------------------------------------------
     def run(self):
-        while self.running:
+        start_time = time.perf_counter()
+        print(f"[START] Vehículo {id(self)} inició su recorrido.")
+        try:
+            while self.running:
 
-            next_row, next_col = self.compute_next_position()
+                next_row, next_col = self.compute_next_position()
 
-            # Ya llegó al destino
-            if (next_row, next_col) == (self.row, self.col):
-                if self.next_index >= len(self.route):
-                    print(f"[OK] Vehículo {id(self)} llegó a su destino final en {self.route[-1]}")
-                    self.running = False
-                    # liberar si por casualidad aún tiene lock
-                    if self.current_lock:
-                        try:
-                            self.current_lock.release()
-                        except RuntimeError:
-                            pass
-                        self.current_lock = None
-                    break
-                time.sleep(0.1)
-                continue
+                # Ya llegó al destino
+                if (next_row, next_col) == (self.row, self.col):
+                    if self.next_index >= len(self.route):
 
-            # 1) Semáforo: si existe y está rojo, esperar hasta verde
-            sem = self.get_traffic_light(next_row, next_col)
-            if sem:
-                # while not sem.is_green() and self.running:
-                while not sem.is_green() and self.running and not sem.is_yellow():
-                    time.sleep(0.2)
+                        # Calcular el tiempo en total
+                        end_time = time.perf_counter()
+                        self.execution_time = end_time - start_time
 
-            # 2) Estrategia de locking (evitar deadlocks):
-            #    Liberamos el lock actual antes de intentar adquirir el siguiente.
-            #    Esto evita espera circular entre vehículos adyacentes.
-            if self.current_lock:
-                try:
-                    self.current_lock.release()
-                except RuntimeError:
-                    pass
-                self.current_lock = None
+                        print(f"[OK] Vehículo {id(self)} llegó a su destino final en {self.route[-1]}")
+                        print(f"[TIME] Tiempo total de ejecución: {self.execution_time:.4f} segundos")
+                        self.running = False
+                        # liberar si por casualidad aún tiene lock
+                        if self.current_lock:
+                            try:
+                                self.current_lock.release()
+                            except RuntimeError:
+                                pass
+                            self.current_lock = None
+                        break
+                    time.sleep(0.1)
+                    continue
 
-            lock = self.intersection_locks[next_row][next_col]
+                # 1) Semáforo: si existe y está rojo, esperar hasta verde
+                sem = self.get_traffic_light(next_row, next_col)
+                if sem:
+                    # while not sem.is_green() and self.running:
+                    while not sem.is_green() and self.running and not sem.is_yellow():
+                        time.sleep(0.2)
 
-            # Intentar adquirir el lock objetivo con backoff
-            acquired = lock.acquire(blocking=False)
-            tries = 0
-            while not acquired and self.running:
-                # backoff con algo de aleatoriedad para reducir contención
-                time.sleep(0.05 + random.random() * 0.15)
-                acquired = lock.acquire(blocking=False)
-                tries += 1
-                # diagnóstico si está demasiado tiempo esperando
-                if tries == 50:
-                    print(f"[WARN] Vehículo {id(self)} esperando mucho por intersección {(next_row, next_col)}")
-
-            if not self.running:
-                # si se pidió stop mientras esperaba, asegurarnos de no quedarnos con lock
-                if acquired:
+                # 2) Estrategia de locking (evitar deadlocks):
+                #    Liberamos el lock actual antes de intentar adquirir el siguiente.
+                #    Esto evita espera circular entre vehículos adyacentes.
+                if self.current_lock:
                     try:
-                        lock.release()
+                        self.current_lock.release()
                     except RuntimeError:
                         pass
-                break
+                    self.current_lock = None
 
-            # Al adquirir el lock del objetivo, lo marcamos como current_lock
-            self.current_lock = lock
+                lock = self.intersection_locks[next_row][next_col]
 
-            # Avanzar a la nueva celda
-            self.row, self.col = next_row, next_col
-            self.x, self.y = self.grid_to_pos((self.row, self.col))
-            self.next_index += 1
+                # Intentar adquirir el lock objetivo con backoff
+                acquired = lock.acquire(blocking=False)
+                tries = 0
+                while not acquired and self.running:
+                    # backoff con algo de aleatoriedad para reducir contención
+                    time.sleep(0.05 + random.random() * 0.15)
+                    acquired = lock.acquire(blocking=False)
+                    tries += 1
+                    # diagnóstico si está demasiado tiempo esperando
+                    if tries == 50:
+                        print(f"[WARN] Vehículo {id(self)} esperando mucho por intersección {(next_row, next_col)}")
 
-            time.sleep(0.15)
+                if not self.running:
+                    # si se pidió stop mientras esperaba, asegurarnos de no quedarnos con lock
+                    if acquired:
+                        try:
+                            lock.release()
+                        except RuntimeError:
+                            pass
+                    break
+
+                # Al adquirir el lock del objetivo, lo marcamos como current_lock
+                self.current_lock = lock
+
+                # Avanzar a la nueva celda
+                self.row, self.col = next_row, next_col
+                self.x, self.y = self.grid_to_pos((self.row, self.col))
+                self.next_index += 1
+
+                time.sleep(0.05)
+        finally:
+            # --- Calcular tiempo si se detuvo abruptamente (stop) ---
+            # Esto asegura que si llamas a stop(), también tengas un registro del tiempo que corrió.
+            if self.execution_time == 0.0:
+                 self.execution_time = time.perf_counter() - start_time
+                 print(f"[STOP] Vehículo detenido. Tiempo corrido: {self.execution_time:.4f} s")
 
     # -------------------------------------------------
     def stop(self):

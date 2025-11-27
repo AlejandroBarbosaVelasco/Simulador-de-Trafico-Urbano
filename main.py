@@ -32,7 +32,18 @@ def set_red_time(valor):
 def iniciar_juego():
     # Usas 'config_juego' para acceder a las variables
     # Llamamos a la función del otro archivo pasando los parametros
-    start_game(surface, config_juego['vehiculos'], config_juego['green_time'], config_juego['yellow_time'], config_juego['red_time'])
+    vehiculos = start_game(surface, config_juego['vehiculos'], config_juego['green_time'], config_juego['yellow_time'], config_juego['red_time'])
+    vehiculos_ordenados = sorted(vehiculos.items(), key=lambda item: item[1])
+
+    print("--- Ranking por tiempo (Menor a Mayor) ---")
+    for id_vehiculo,tiempo_recorrido in vehiculos_ordenados:
+        print(f"{id_vehiculo}: {tiempo_recorrido:.4f} s")
+
+    tiempos = vehiculos.values()
+    promedio = sum(tiempos) / len(tiempos)
+    print(f"--- Estadísticas ---")
+    print(f"Total vehículos: {len(tiempos)}")
+    print(f"Tiempo promedio: {promedio:.4f} segundos")
 
     # Cuando start_simulation termine (return), el código sigue aquí:
     # Reiniciamos el menú para que se vuelva a dibujar correctamente

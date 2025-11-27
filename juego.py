@@ -75,9 +75,9 @@ def start_game(surface, vehiculos, green_time, yellow_time, red_time):
 
             # Imprime y colorea los vehiculos
             if r:
-                pygame.draw.polygon(surface, (255, 128, 0), points)
+                pygame.draw.polygon(surface, (255, 255, 255), points)
             else:
-                pygame.draw.polygon(surface, (0, 0, 255), points)
+                pygame.draw.polygon(surface, (170, 170, 170), points)
 
 
         # Eventos
@@ -93,11 +93,13 @@ def start_game(surface, vehiculos, green_time, yellow_time, red_time):
         clock.tick(60) # Limitar FPS es importante para no quemar CPU
 
     # pygame.quit()
+    info_v = {}
 
     # --- LIMPIEZA DE HILOS (Crucial antes de volver al menú) ---
     for sem in traffic_lights:
         sem.stop()
     for v in vehicles:
+        info_v[id(v)] = v.execution_time
         v.stop()
 
     # Esperar a que terminen
@@ -108,3 +110,4 @@ def start_game(surface, vehiculos, green_time, yellow_time, red_time):
 
     print("Simulación finalizada. Volviendo al menú.")
     # AQUI DEBE DE RETORNARSE LOS TIEMPOS DE CADA HILO CON UN RETURN
+    return info_v
