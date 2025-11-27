@@ -65,7 +65,7 @@ def start_game(surface, vehiculos, green_time, yellow_time, red_time):
 
         # Dibujar vehículos
         for v in vehicles:
-            x, y = v.get_pixel_position()
+            x, y, r = v.get_pixel_position()
 
             points = [
                 (x,     y - 8),
@@ -74,7 +74,11 @@ def start_game(surface, vehiculos, green_time, yellow_time, red_time):
             ]
 
             # Imprime y colorea los vehiculos
-            pygame.draw.polygon(surface, (255, 255, 255), points)
+            if r:
+                pygame.draw.polygon(surface, (255, 128, 0), points)
+            else:
+                pygame.draw.polygon(surface, (0, 0, 255), points)
+
 
         # Eventos
         for event in pygame.event.get():

@@ -30,7 +30,7 @@ def generate_traffic_lights(green_time, yellow_time, red_time):
 
     random.shuffle(available)
 
-    for (r, c) in available[:12]:
+    for (r, c) in available[:20]:
 
         # Convertir grid → pixeles
         x = c * (BLOCK_SIZE + STREET_WIDTH) - STREET_WIDTH

@@ -9,7 +9,7 @@ GRID_SIZE = 12  # asegúrate que coincide con city_map.GRID_SIZE si lo exportas
 class Vehicle(threading.Thread):
 
     def __init__(self, start_cell, end_cell, grid_to_pos, 
-                 traffic_lights, intersection_locks, speed=2):
+                 traffic_lights, intersection_locks, speed=0.2):
         super().__init__()
 
         self.grid_to_pos = grid_to_pos
@@ -133,7 +133,8 @@ class Vehicle(threading.Thread):
             # 1) Semáforo: si existe y está rojo, esperar hasta verde
             sem = self.get_traffic_light(next_row, next_col)
             if sem:
-                while not sem.is_green() and self.running:
+                # while not sem.is_green() and self.running:
+                while not sem.is_green() and self.running and not sem.is_yellow():
                     time.sleep(0.2)
 
             # 2) Estrategia de locking (evitar deadlocks):
@@ -192,4 +193,4 @@ class Vehicle(threading.Thread):
 
     # -------------------------------------------------
     def get_pixel_position(self):
-        return int(self.x), int(self.y)
+        return int(self.x), int(self.y), self.running

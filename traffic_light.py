@@ -26,6 +26,8 @@ class TrafficLight(threading.Thread):
 
     def is_green(self):
         return self.current_color == (0, 220, 0)
+    def is_yellow(self):
+        return self.current_color == (240, 220, 0)
 
     def run(self):
         """
